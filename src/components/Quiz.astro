@@ -1,0 +1,246 @@
+---
+interface MCQ {
+  question: string;
+  options: string[];
+  answer: number;
+  explanation?: string;
+}
+
+interface Props {
+  mcqs: MCQ[];
+}
+
+const { mcqs } = Astro.props;
+const quizData = JSON.stringify(mcqs);
+---
+
+<section class="mt-16 p-8 bg-sf-light rounded-2xl border border-blue-100">
+  <div class="flex items-center gap-3 mb-2">
+    <div class="w-9 h-9 bg-sf-blue rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">?</div>
+    <h2 class="text-2xl font-bold text-sf-dark">Knowledge Check</h2>
+  </div>
+  <p class="text-gray-500 text-sm mb-8 ml-12">Answer one question at a time — check your answer before moving on.</p>
+
+  <div id="quiz-container" data-quiz={quizData}>
+
+    <!-- Progress bar -->
+    <div class="mb-6">
+      <div class="flex justify-between text-xs text-gray-500 mb-2">
+        <span id="q-label">Question 1 of {mcqs.length}</span>
+        <span id="q-score-live">0 correct</span>
+      </div>
+      <div class="w-full bg-gray-200 rounded-full h-2">
+        <div id="q-progress" class="bg-sf-blue h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <!-- Question card -->
+    <div id="question-card" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      <p id="question-text" class="font-semibold text-gray-800 mb-5 text-base leading-relaxed"></p>
+      <div id="options-list" class="space-y-3"></div>
+
+      <!-- Feedback (hidden initially) -->
+      <div id="feedback" class="hidden mt-5 p-4 rounded-lg border">
+        <p id="feedback-verdict" class="font-bold text-sm mb-1"></p>
+        <p id="feedback-explanation" class="text-sm text-gray-600 leading-relaxed"></p>
+      </div>
+
+      <!-- Buttons -->
+      <div class="mt-6 flex gap-3">
+        <button id="btn-check" class="px-6 py-2.5 bg-sf-blue text-white font-semibold rounded-lg hover:bg-sf-dark transition-colors text-sm cursor-pointer">
+          Check Answer
+        </button>
+        <button id="btn-next" class="hidden px-6 py-2.5 bg-sf-dark text-white font-semibold rounded-lg hover:bg-sf-blue transition-colors text-sm cursor-pointer">
+          Next Question
+        </button>
+        <button id="btn-finish" class="hidden px-6 py-2.5 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors text-sm cursor-pointer">
+          See Results
+        </button>
+      </div>
+    </div>
+
+    <!-- Results panel (hidden initially) -->
+    <div id="results-panel" class="hidden bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center">
+      <div id="result-icon" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl"></div>
+      <p id="result-score" class="text-3xl font-black text-sf-dark mb-2"></p>
+      <p id="result-message" class="font-medium text-sm mb-6"></p>
+      <div id="result-breakdown" class="text-left space-y-3 mb-6 max-h-72 overflow-y-auto pr-1"></div>
+      <button id="btn-restart" class="px-6 py-2.5 bg-sf-blue text-white font-semibold rounded-lg hover:bg-sf-dark transition-colors text-sm cursor-pointer">
+        Try Again
+      </button>
+    </div>
+
+  </div>
+</section>
+
+<script>
+  const container = document.getElementById('quiz-container')!;
+  const mcqs: { question: string; options: string[]; answer: number; explanation?: string }[] =
+    JSON.parse(container.dataset.quiz!);
+
+  const qLabel       = document.getElementById('q-label')!;
+  const qScoreLive   = document.getElementById('q-score-live')!;
+  const qProgress    = document.getElementById('q-progress') as HTMLDivElement;
+  const questionText = document.getElementById('question-text')!;
+  const optionsList  = document.getElementById('options-list')!;
+  const feedback     = document.getElementById('feedback')!;
+  const feedbackVerdict     = document.getElementById('feedback-verdict')!;
+  const feedbackExplanation = document.getElementById('feedback-explanation')!;
+  const btnCheck   = document.getElementById('btn-check') as HTMLButtonElement;
+  const btnNext    = document.getElementById('btn-next') as HTMLButtonElement;
+  const btnFinish  = document.getElementById('btn-finish') as HTMLButtonElement;
+  const questionCard  = document.getElementById('question-card')!;
+  const resultsPanel  = document.getElementById('results-panel')!;
+  const resultIcon    = document.getElementById('result-icon')!;
+  const resultScore   = document.getElementById('result-score')!;
+  const resultMessage = document.getElementById('result-message')!;
+  const resultBreakdown = document.getElementById('result-breakdown')!;
+  const btnRestart  = document.getElementById('btn-restart') as HTMLButtonElement;
+
+  let current = 0;
+  let score = 0;
+  const userAnswers: number[] = [];
+
+  function renderQuestion(index: number) {
+    const mcq = mcqs[index];
+    const total = mcqs.length;
+
+    qLabel.textContent = `Question ${index + 1} of ${total}`;
+    qScoreLive.textContent = `${score} correct`;
+    qProgress.style.width = `${(index / total) * 100}%`;
+
+    questionText.textContent = mcq.question;
+    optionsList.innerHTML = '';
+    feedback.classList.add('hidden');
+    btnCheck.classList.remove('hidden');
+    btnNext.classList.add('hidden');
+    btnFinish.classList.add('hidden');
+    btnCheck.disabled = false;
+
+    mcq.options.forEach((opt, i) => {
+      const label = document.createElement('label');
+      label.className =
+        'option-label flex items-center gap-3 p-3 rounded-lg border border-gray-200 cursor-pointer hover:border-sf-blue hover:bg-blue-50 transition-all select-none';
+      label.innerHTML = `
+        <input type="radio" name="quiz-option" value="${i}" class="w-4 h-4 accent-sf-blue flex-shrink-0" />
+        <span class="text-gray-700 text-sm">${opt}</span>
+      `;
+      optionsList.appendChild(label);
+    });
+  }
+
+  function checkAnswer() {
+    const selected = optionsList.querySelector<HTMLInputElement>('input[name="quiz-option"]:checked');
+    if (!selected) {
+      alert('Please select an answer before checking.');
+      return;
+    }
+
+    const mcq = mcqs[current];
+    const selectedIdx = parseInt(selected.value);
+    const correct = mcq.answer;
+    userAnswers[current] = selectedIdx;
+
+    // Disable all options
+    optionsList.querySelectorAll<HTMLInputElement>('input').forEach(r => r.disabled = true);
+
+    // Style options
+    optionsList.querySelectorAll<HTMLLabelElement>('.option-label').forEach((lbl, i) => {
+      if (i === correct) {
+        lbl.className = lbl.className.replace('border-gray-200', 'border-green-500');
+        lbl.classList.add('bg-green-50');
+        lbl.querySelector('span')!.classList.add('text-green-700', 'font-semibold');
+      } else if (i === selectedIdx && selectedIdx !== correct) {
+        lbl.className = lbl.className.replace('border-gray-200', 'border-red-400');
+        lbl.classList.add('bg-red-50');
+        lbl.querySelector('span')!.classList.add('text-red-600');
+      }
+    });
+
+    const isCorrect = selectedIdx === correct;
+    if (isCorrect) score++;
+
+    // Show feedback
+    feedback.classList.remove('hidden');
+    if (isCorrect) {
+      feedback.className = 'mt-5 p-4 rounded-lg border bg-green-50 border-green-200';
+      feedbackVerdict.className = 'font-bold text-sm mb-1 text-green-700';
+      feedbackVerdict.textContent = 'Correct!';
+    } else {
+      feedback.className = 'mt-5 p-4 rounded-lg border bg-red-50 border-red-200';
+      feedbackVerdict.className = 'font-bold text-sm mb-1 text-red-600';
+      feedbackVerdict.textContent = `Incorrect — the correct answer is: "${mcq.options[correct]}"`;
+    }
+    feedbackExplanation.textContent = mcq.explanation ?? '';
+
+    qScoreLive.textContent = `${score} correct`;
+    btnCheck.classList.add('hidden');
+
+    const isLast = current === mcqs.length - 1;
+    if (isLast) {
+      btnFinish.classList.remove('hidden');
+    } else {
+      btnNext.classList.remove('hidden');
+    }
+  }
+
+  function showResults() {
+    qProgress.style.width = '100%';
+    questionCard.classList.add('hidden');
+    resultsPanel.classList.remove('hidden');
+
+    const total = mcqs.length;
+    const pct = Math.round((score / total) * 100);
+
+    resultScore.textContent = `${score} / ${total} (${pct}%)`;
+
+    if (pct >= 80) {
+      resultIcon.textContent = '🏆';
+      resultIcon.className = 'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl bg-green-100';
+      resultMessage.textContent = 'Excellent! You have a strong grasp of this topic.';
+      resultMessage.className = 'font-medium text-sm mb-6 text-green-600';
+    } else if (pct >= 60) {
+      resultIcon.textContent = '👍';
+      resultIcon.className = 'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl bg-yellow-100';
+      resultMessage.textContent = 'Good effort! Review the highlighted answers to reinforce your knowledge.';
+      resultMessage.className = 'font-medium text-sm mb-6 text-yellow-600';
+    } else {
+      resultIcon.textContent = '📚';
+      resultIcon.className = 'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl bg-red-100';
+      resultMessage.textContent = 'Keep learning! Re-read the article and try again.';
+      resultMessage.className = 'font-medium text-sm mb-6 text-red-500';
+    }
+
+    // Breakdown
+    resultBreakdown.innerHTML = '';
+    mcqs.forEach((mcq, i) => {
+      const ua = userAnswers[i];
+      const isOk = ua === mcq.answer;
+      const div = document.createElement('div');
+      div.className = `p-3 rounded-lg text-sm ${isOk ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`;
+      div.innerHTML = `
+        <p class="font-semibold ${isOk ? 'text-green-700' : 'text-red-600'} mb-1">
+          ${isOk ? '✓' : '✗'} Q${i + 1}: ${mcq.question}
+        </p>
+        <p class="text-gray-600 text-xs">Your answer: <strong>${mcq.options[ua]}</strong>${!isOk ? ` &nbsp;|&nbsp; Correct: <strong>${mcq.options[mcq.answer]}</strong>` : ''}</p>
+      `;
+      resultBreakdown.appendChild(div);
+    });
+  }
+
+  function restart() {
+    current = 0;
+    score = 0;
+    userAnswers.length = 0;
+    resultsPanel.classList.add('hidden');
+    questionCard.classList.remove('hidden');
+    renderQuestion(0);
+  }
+
+  btnCheck.addEventListener('click', checkAnswer);
+  btnNext.addEventListener('click', () => { current++; renderQuestion(current); });
+  btnFinish.addEventListener('click', showResults);
+  btnRestart.addEventListener('click', restart);
+
+  renderQuestion(0);
+</script>

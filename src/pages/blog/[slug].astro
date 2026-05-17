@@ -1,0 +1,192 @@
+---
+import { getCollection, render } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import Quiz from '../../components/Quiz.astro';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.map((post) => ({
+    params: { slug: post.id.replace(/\.mdx?$/, '') },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+function formatDate(date: Date) {
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+---
+
+<Layout title={post.data.title} description={post.data.description}>
+  <!-- Post Header -->
+  <section class="bg-sf-dark py-16">
+    <div class="max-w-3xl mx-auto px-6">
+      <a href="/blog" class="inline-flex items-center gap-2 text-gray-400 hover:text-sf-blue text-sm mb-8 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to Blog
+      </a>
+
+      <div class="flex flex-wrap gap-2 mb-5">
+        {post.data.tags.map((tag) => (
+          <span class="text-xs bg-sf-blue/20 text-sf-blue border border-sf-blue/30 font-semibold px-3 py-1 rounded-full">
+            {tag}
+          </span>
+        ))}
+      </div>
+
+      <h1 class="text-3xl md:text-4xl font-black text-white leading-snug mb-4">
+        {post.data.title}
+      </h1>
+      <p class="text-gray-300 text-lg leading-relaxed mb-6">{post.data.description}</p>
+
+      <div class="flex items-center gap-4 text-sm text-gray-400">
+        <div class="flex items-center gap-2">
+          <img src="/images/ram-kumar.jpg" alt="Ram Kumar" class="w-8 h-8 rounded-full object-cover object-top"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          <div class="w-8 h-8 rounded-full bg-sf-blue items-center justify-center text-white text-xs font-bold" style="display:none;">R</div>
+          <span>Ram Kumar</span>
+        </div>
+        <span class="text-gray-600">/</span>
+        <time>{formatDate(post.data.pubDate)}</time>
+        {post.data.mcqs && post.data.mcqs.length > 0 && (
+          <>
+            <span class="text-gray-600">/</span>
+            <span class="text-green-400">{post.data.mcqs.length} MCQs included</span>
+          </>
+        )}
+      </div>
+    </div>
+  </section>
+
+  <!-- Post Content -->
+  <section class="py-16 bg-white">
+    <div class="max-w-3xl mx-auto px-6">
+      <div class="prose prose-lg prose-headings:text-sf-dark prose-headings:font-bold prose-a:text-sf-blue prose-strong:text-sf-dark prose-code:font-bold prose-code:font-mono max-w-none">
+        <Content />
+      </div>
+
+      <!-- MCQ Quiz -->
+      {post.data.mcqs && post.data.mcqs.length > 0 && (
+        <Quiz mcqs={post.data.mcqs} />
+      )}
+
+      <!-- Reference Links -->
+      {post.data.references && post.data.references.length > 0 && (
+        <div class="mt-16 p-8 bg-sf-light rounded-2xl border border-blue-100">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-9 h-9 bg-sf-blue rounded-full flex items-center justify-center flex-shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-sf-dark">Reference Links</h2>
+              <p class="text-gray-500 text-xs mt-0.5">Recommended reading & official Trailhead resources</p>
+            </div>
+          </div>
+          <div class="grid sm:grid-cols-2 gap-3">
+            {post.data.references.map((ref) => (
+              <a
+                href={ref.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex items-center gap-3 bg-white p-4 rounded-xl border border-gray-100 hover:border-sf-blue hover:shadow-md transition-all group"
+              >
+                <div class="w-8 h-8 rounded-lg bg-sf-light flex items-center justify-center flex-shrink-0 group-hover:bg-sf-blue transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-sf-blue group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </div>
+                <span class="text-sm font-medium text-sf-dark group-hover:text-sf-blue transition-colors leading-snug">
+                  {ref.title}
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <!-- Navigation -->
+      <div class="mt-16 pt-8 border-t border-gray-100 flex justify-between items-center">
+        <a href="/blog" class="inline-flex items-center gap-2 text-sf-blue font-semibold text-sm hover:gap-3 transition-all">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          All Articles
+        </a>
+        <a href="/#contact" class="text-sm text-gray-400 hover:text-sf-blue transition-colors">
+          Have a question? Contact me
+        </a>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .prose pre {
+    background-color: #e8f3ff !important;
+    border: 2px solid #64a8e8 !important;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    position: relative;
+    margin: 1.5rem 0;
+    box-shadow: 0 2px 8px rgba(0, 120, 212, 0.08);
+  }
+  .prose pre code {
+    display: block;
+    padding: 1.25rem 1.5rem;
+    overflow-x: auto;
+    font-size: 0.875em;
+    line-height: 1.7;
+  }
+  .code-copy-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.25rem 0.65rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    border-radius: 0.4rem;
+    background: #e2e8f0;
+    color: #475569;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    z-index: 10;
+  }
+  .code-copy-btn:hover {
+    background: #00A1E0;
+    color: #fff;
+  }
+  .prose code:not(pre code) {
+    font-size: 0.875em;
+    font-weight: 700;
+    color: #032D60;
+    background: #e8ecf0;
+    padding: 0.15em 0.45em;
+    border-radius: 0.3em;
+    border: 1px solid #c8d5e0;
+  }
+</style>
+
+<script>
+  // Add copy button to every code block
+  document.querySelectorAll('.prose pre').forEach((pre) => {
+    const btn = document.createElement('button');
+    btn.className = 'code-copy-btn';
+    btn.textContent = 'Copy';
+    btn.addEventListener('click', () => {
+      const code = pre.querySelector('code');
+      if (!code) return;
+      navigator.clipboard.writeText(code.innerText).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+      });
+    });
+    pre.appendChild(btn);
+  });
+</script>

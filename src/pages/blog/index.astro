@@ -1,0 +1,180 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+
+const posts = (await getCollection('blog')).sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+);
+
+function formatDate(date: Date) {
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function getSlug(id: string) {
+  return id.replace(/\.mdx?$/, '');
+}
+
+const postsJson = JSON.stringify(
+  posts.map((p) => ({
+    slug: getSlug(p.id),
+    title: p.data.title,
+    description: p.data.description,
+    tags: p.data.tags,
+    pubDate: formatDate(p.data.pubDate),
+    mcqCount: p.data.mcqs?.length ?? 0,
+  }))
+);
+---
+
+<Layout title="Blog" description="Salesforce development articles, tips, and solutions by Ram Kumar.">
+  <!-- Hero -->
+  <section class="bg-sf-dark py-20">
+    <div class="max-w-6xl mx-auto px-6 text-center">
+      <span class="text-sf-blue font-semibold text-xs uppercase tracking-widest">Knowledge Base</span>
+      <h1 class="text-5xl font-black text-white mt-3 mb-4">Salesforce Blog</h1>
+      <p class="text-gray-300 text-lg max-w-xl mx-auto mb-8">
+        Practical articles on Apex, LWC, Flows, and real-world Salesforce problem solutions.
+      </p>
+
+      <!-- Search bar -->
+      <div class="max-w-xl mx-auto relative">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input
+          id="blog-search"
+          type="text"
+          placeholder="Search articles by title, tag, or keyword..."
+          class="w-full pl-12 pr-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:border-sf-blue focus:bg-white/15 transition-all text-sm"
+        />
+        <button id="clear-search" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors text-lg leading-none">&times;</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Posts Grid -->
+  <section class="py-20 bg-sf-light min-h-screen">
+    <div class="max-w-6xl mx-auto px-6">
+
+      <div id="search-status" class="hidden mb-6 text-sm text-gray-500"></div>
+
+      <div id="posts-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- Rendered by JS -->
+      </div>
+
+      <div id="no-results" class="hidden text-center py-20">
+        <p class="text-gray-400 text-lg">No articles found for your search.</p>
+        <button id="reset-search" class="mt-4 text-sf-blue text-sm font-semibold hover:underline">Clear search</button>
+      </div>
+
+      <div class="text-center mt-12">
+        <button
+          id="load-more"
+          class="hidden px-8 py-3 bg-sf-dark text-white font-semibold rounded-xl hover:bg-sf-blue transition-colors text-sm"
+        >
+          Load More Articles
+        </button>
+        <p id="all-loaded" class="hidden text-sm text-gray-400">All articles loaded.</p>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<script is:inline define:vars={{ postsJson }}>
+  const ALL_POSTS = JSON.parse(postsJson);
+  const PAGE_SIZE = 10;
+
+  let filtered = [...ALL_POSTS];
+  let shown = 0;
+
+  const grid        = document.getElementById('posts-grid');
+  const noResults   = document.getElementById('no-results');
+  const loadMoreBtn = document.getElementById('load-more');
+  const allLoaded   = document.getElementById('all-loaded');
+  const searchInput = document.getElementById('blog-search');
+  const clearBtn    = document.getElementById('clear-search');
+  const resetBtn    = document.getElementById('reset-search');
+  const statusEl    = document.getElementById('search-status');
+
+  function renderCard(post) {
+    return `
+      <article class="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-lg hover:border-sf-blue transition-all group flex flex-col">
+        <div class="h-1.5 bg-gradient-to-r from-sf-blue to-sf-mid"></div>
+        <div class="p-6 flex flex-col flex-1">
+          <div class="flex flex-wrap gap-2 mb-4">
+            ${post.tags.slice(0, 3).map(tag => `
+              <span class="text-xs bg-sf-light text-sf-blue font-semibold px-3 py-1 rounded-full border border-blue-100">${tag}</span>
+            `).join('')}
+          </div>
+          <h2 class="text-lg font-bold text-sf-dark mb-3 group-hover:text-sf-blue transition-colors leading-snug">
+            <a href="/blog/${post.slug}">${post.title}</a>
+          </h2>
+          <p class="text-gray-600 text-sm leading-relaxed flex-1 mb-5">${post.description}</p>
+          <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+            <time class="text-xs text-gray-400">${post.pubDate}</time>
+            ${post.mcqCount > 0 ? `<span class="text-xs bg-green-50 text-green-600 font-medium px-2 py-1 rounded-full border border-green-200">${post.mcqCount} MCQs</span>` : ''}
+          </div>
+          <a href="/blog/${post.slug}" class="mt-4 inline-flex items-center gap-2 text-sf-blue font-semibold text-sm hover:gap-3 transition-all">
+            Read Article
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </a>
+        </div>
+      </article>
+    `;
+  }
+
+  function updateUI() {
+    const slice = filtered.slice(0, shown);
+    grid.innerHTML = slice.map(renderCard).join('');
+
+    const hasMore = shown < filtered.length;
+    loadMoreBtn.classList.toggle('hidden', !hasMore);
+    allLoaded.classList.toggle('hidden', hasMore || filtered.length === 0);
+    noResults.classList.toggle('hidden', filtered.length > 0);
+  }
+
+  function applySearch(query) {
+    const q = query.trim().toLowerCase();
+    if (!q) {
+      filtered = [...ALL_POSTS];
+      statusEl.classList.add('hidden');
+    } else {
+      filtered = ALL_POSTS.filter(p =>
+        p.title.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q) ||
+        p.tags.some(t => t.toLowerCase().includes(q))
+      );
+      statusEl.textContent = `${filtered.length} result${filtered.length !== 1 ? 's' : ''} for "${query.trim()}"`;
+      statusEl.classList.remove('hidden');
+    }
+    shown = Math.min(PAGE_SIZE, filtered.length);
+    updateUI();
+  }
+
+  function loadMore() {
+    shown = Math.min(shown + PAGE_SIZE, filtered.length);
+    updateUI();
+  }
+
+  function clearSearch() {
+    searchInput.value = '';
+    clearBtn.classList.add('hidden');
+    applySearch('');
+  }
+
+  searchInput.addEventListener('input', (e) => {
+    const val = e.target.value;
+    clearBtn.classList.toggle('hidden', !val);
+    applySearch(val);
+  });
+
+  clearBtn.addEventListener('click', clearSearch);
+  resetBtn.addEventListener('click', clearSearch);
+  loadMoreBtn.addEventListener('click', loadMore);
+
+  // Initial render
+  shown = Math.min(PAGE_SIZE, ALL_POSTS.length);
+  updateUI();
+</script>

@@ -1,0 +1,418 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+
+const allPosts = (await getCollection('blog')).sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+);
+const latestPosts = allPosts.slice(0, 3);
+
+function getSlug(id: string) {
+  return id.replace(/\.mdx?$/, '');
+}
+function formatDate(date: Date) {
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+const skillGroups = [
+  {
+    category: 'Salesforce Platform',
+    skills: ['Salesforce Administration', 'Sales Cloud', 'Agentforce', 'Validation Rules', 'Reports & Dashboards'],
+  },
+  {
+    category: 'Development',
+    skills: ['Apex', 'Triggers', 'Batch Apex', 'Lightning Web Components (LWC)', 'Flow Builder', 'SOQL', 'SOSL'],
+  },
+  {
+    category: 'Integration & Tools',
+    skills: ['REST API Integrations', 'Salesforce DX', 'VS Code', 'Data Loader', 'Postman'],
+  },
+  {
+    category: 'Quality & Delivery',
+    skills: ['QA', 'Deployment & Debugging', 'Functional Documentation', 'Technical Documentation'],
+  },
+];
+
+const projects = [
+  {
+    title: 'Angel One B2B',
+    description:
+      'Developed and enhanced a B2B solution on Salesforce Sales Cloud for partner acquisition and retention. Implemented Lead Management, Account Management, Activity Tracking, Reports, and Dashboards.',
+    tags: ['Sales Cloud', 'Apex', 'LWC', 'Flows'],
+    type: 'Enterprise',
+    role: 'Lead Developer',
+  },
+  {
+    title: 'Asian Hospital Agentforce POC',
+    description:
+      'Delivered an Agentforce chatbot Proof of Concept for hospital service management. Built automated Lead Creation, Account Conversion flows, Appointment Scheduling, and patient query handling.',
+    tags: ['Agentforce', 'Apex', 'Flow Builder', 'LWC'],
+    type: 'POC',
+    role: 'Developer',
+  },
+];
+
+const certs = [
+  { name: 'Salesforce Certified Platform Developer', image: '/images/cert-platform-developer.png' },
+  { name: 'Agentblazer Champion 2025', image: '/images/cert-agentblazer.png' },
+  { name: 'Double Star Ranger', image: '/images/cert-double-star-ranger.png' },
+];
+---
+
+<Layout title="Home">
+
+  <!-- Hero -->
+  <section class="min-h-screen bg-sf-dark flex items-center relative overflow-hidden">
+    <div class="absolute inset-0 opacity-5">
+      <div class="absolute top-16 right-16 w-[500px] h-[500px] rounded-full border-2 border-white"></div>
+      <div class="absolute top-36 right-36 w-80 h-80 rounded-full border border-white"></div>
+      <div class="absolute -bottom-24 -left-24 w-96 h-96 rounded-full border-2 border-white"></div>
+    </div>
+
+    <div class="max-w-6xl mx-auto px-6 py-24 relative z-10">
+      <div class="max-w-3xl">
+        <div class="inline-flex items-center gap-2 bg-white/10 border border-sf-blue/40 text-blue-200 px-4 py-2 rounded-full text-sm font-medium mb-8">
+          <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+          Committed to technical excellence
+        </div>
+
+        <h1 class="text-5xl md:text-7xl font-black text-white mb-4 leading-tight">
+          Hi, I'm <span class="text-sf-blue">Ram Kumar</span>
+        </h1>
+
+        <h2 class="text-2xl md:text-3xl font-light text-blue-200 mb-6">
+          Salesforce Developer
+        </h2>
+
+        <p class="text-lg text-gray-300 leading-relaxed mb-10 max-w-xl">
+          Results-driven Salesforce Developer with experience in delivering and customizing solutions on Salesforce Platform and Agentforce.
+          Based at TechMatrix IT Consulting, Jaipur.
+        </p>
+
+        <div class="flex flex-wrap gap-4 mb-16">
+          <a
+            href="#projects"
+            class="bg-sf-blue hover:bg-sf-mid text-white font-semibold px-8 py-4 rounded-xl transition-colors"
+          >
+            View My Work
+          </a>
+          <a
+            href="/blog"
+            class="border border-white/30 hover:border-white text-white font-semibold px-8 py-4 rounded-xl transition-all hover:bg-white/10"
+          >
+            Read My Blog
+          </a>
+        </div>
+
+        <div class="flex flex-wrap gap-10">
+          {
+            [
+              { stat: '1+', label: 'Year Experience' },
+              { stat: '2+', label: 'Projects Delivered' },
+              { stat: '3+', label: 'Certifications' },
+            ].map((item, i) => (
+              <div class="flex items-start gap-6">
+                {i > 0 && <div class="w-px h-12 bg-white/10 self-center" />}
+                <div>
+                  <p class="text-4xl font-black text-white">{item.stat}</p>
+                  <p class="text-gray-400 text-sm mt-1">{item.label}</p>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Latest Blogs Carousel -->
+  <section class="py-16 bg-white border-b border-gray-100">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="flex items-center justify-between mb-10">
+        <div>
+          <span class="text-sf-blue font-semibold text-xs uppercase tracking-widest">From the Blog</span>
+          <h2 class="text-3xl font-bold text-sf-dark mt-1">Latest Articles</h2>
+        </div>
+        <a href="/blog" class="text-sm text-sf-blue font-semibold hover:underline hidden sm:block">View all →</a>
+      </div>
+
+      <div class="relative overflow-hidden" id="carousel-track-wrap">
+        <div id="carousel-track" class="flex transition-transform duration-500 ease-in-out gap-6">
+          {latestPosts.map((post) => (
+            <a
+              href={`/blog/${getSlug(post.id)}`}
+              class="carousel-slide flex-none w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] bg-sf-light rounded-2xl p-6 border border-blue-100 hover:border-sf-blue hover:shadow-md transition-all group block"
+            >
+              <div class="flex flex-wrap gap-2 mb-4">
+                {post.data.tags.slice(0, 2).map((tag) => (
+                  <span class="text-xs bg-white text-sf-blue font-semibold px-3 py-1 rounded-full border border-blue-100">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              <h3 class="font-bold text-sf-dark text-base leading-snug mb-3 group-hover:text-sf-blue transition-colors line-clamp-2">
+                {post.data.title}
+              </h3>
+              <p class="text-gray-500 text-sm leading-relaxed line-clamp-2 mb-4">
+                {post.data.description}
+              </p>
+              <div class="flex items-center justify-between mt-auto">
+                <time class="text-xs text-gray-400">{formatDate(post.data.pubDate)}</time>
+                <span class="text-sf-blue text-xs font-semibold group-hover:translate-x-1 transition-transform inline-block">Read →</span>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+
+      <!-- Dots -->
+      <div class="flex justify-center gap-2 mt-8" id="carousel-dots">
+        {latestPosts.map((_, i) => (
+          <button
+            class={`carousel-dot w-2.5 h-2.5 rounded-full transition-all ${i === 0 ? 'bg-sf-blue w-6' : 'bg-gray-300'}`}
+            data-index={i}
+            aria-label={`Slide ${i + 1}`}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- About -->
+  <section id="about" class="py-24 bg-white">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="grid md:grid-cols-2 gap-16 items-center">
+        <div class="relative flex justify-center">
+          <img
+            src="/images/ram-kumar.jpg"
+            alt="Ram Kumar"
+            class="w-72 h-80 rounded-3xl object-cover object-top shadow-xl border-4 border-sf-blue/20"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+          />
+          <div class="w-72 h-72 rounded-3xl bg-gradient-to-br from-sf-light to-blue-100 flex-col items-center justify-center border-4 border-sf-blue/20 shadow-xl" style="display:none;">
+            <div class="w-24 h-24 rounded-full bg-sf-blue/20 flex items-center justify-center mb-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-14 h-14 text-sf-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <p class="text-sf-blue/60 text-xs font-medium">Save photo to public/images/ram-kumar.jpg</p>
+          </div>
+        </div>
+
+        <div>
+          <span class="text-sf-blue font-semibold text-xs uppercase tracking-widest">About Me</span>
+          <h2 class="text-4xl font-bold text-sf-dark mt-2 mb-6">Crafting Salesforce Solutions That Matter</h2>
+          <p class="text-gray-600 leading-relaxed mb-4">
+            I'm a results-driven Salesforce Developer with hands-on experience delivering end-to-end solutions
+            on Sales Cloud and Agentforce. Proven contributor through the full project lifecycle — requirement
+            gathering, solution design, development, QA, deployment, and client communication.
+          </p>
+          <p class="text-gray-600 leading-relaxed mb-8">
+            Currently at TechMatrix IT Consulting, I've delivered key projects including Angel One B2B and
+            Asian Hospital Agentforce POC. I'm passionate about continuously learning new technologies and
+            growing into a technically strong software engineer.
+          </p>
+          <div class="grid grid-cols-2 gap-4">
+            {
+              [
+                { label: 'Location', value: 'Jaipur, India' },
+                { label: 'Company', value: 'TechMatrix IT Consulting' },
+                { label: 'Focus', value: 'Salesforce Development' },
+                { label: 'Email', value: 'ramkumar1622001@gmail.com' },
+              ].map((item) => (
+                <div>
+                  <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">{item.label}</p>
+                  <p class="text-gray-800 font-medium text-sm">{item.value}</p>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Skills -->
+  <section id="skills" class="py-24 bg-sf-light">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <span class="text-sf-blue font-semibold text-xs uppercase tracking-widest">Technical Expertise</span>
+        <h2 class="text-4xl font-bold text-sf-dark mt-2">Skills & Technologies</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {
+          skillGroups.map((group) => (
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-sf-blue/30 transition-all">
+              <h3 class="font-bold text-sf-dark text-sm uppercase tracking-wide mb-4 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-sf-blue inline-block"></span>
+                {group.category}
+              </h3>
+              <div class="flex flex-wrap gap-2">
+                {group.skills.map((skill) => (
+                  <span class="bg-sf-light text-sf-dark px-3 py-1.5 rounded-full text-sm font-medium border border-blue-100 hover:bg-sf-blue hover:text-white hover:border-sf-blue transition-all cursor-default select-none">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Certifications -->
+  <section class="py-16 bg-white">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="text-center mb-12">
+        <span class="text-sf-blue font-semibold text-xs uppercase tracking-widest">Credentials</span>
+        <h2 class="text-4xl font-bold text-sf-dark mt-2">Certifications & Achievements</h2>
+      </div>
+      <p class="text-center text-gray-400 text-xs mb-8">Click any badge to view on Trailhead</p>
+      <div class="flex flex-wrap justify-center gap-6">
+        {
+          certs.map((cert) => (
+            <a
+              href="https://www.salesforce.com/trailblazer/gtzaixc0oekxxdma04"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="flex items-center gap-4 bg-sf-dark text-white px-6 py-4 rounded-2xl shadow-md hover:shadow-xl hover:scale-105 transition-all cursor-pointer"
+            >
+              <img
+                src={cert.image}
+                alt={cert.name}
+                class="w-12 h-12 object-contain"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+              />
+              <div class="w-9 h-9 rounded-full bg-sf-blue items-center justify-center flex-shrink-0" style="display:none;">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <span class="font-medium text-sm">{cert.name}</span>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Projects -->
+  <section id="projects" class="py-24 bg-sf-light">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <span class="text-sf-blue font-semibold text-xs uppercase tracking-widest">Portfolio</span>
+        <h2 class="text-4xl font-bold text-sf-dark mt-2">Featured Projects</h2>
+      </div>
+      <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        {
+          projects.map((project) => (
+            <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-lg transition-shadow group">
+              <div class="h-1.5 bg-gradient-to-r from-sf-blue to-sf-mid" />
+              <div class="p-6">
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="text-xs text-sf-blue font-semibold uppercase tracking-wide bg-blue-50 px-3 py-1 rounded-full">
+                    {project.type}
+                  </span>
+                  <span class="text-xs text-gray-400 font-medium">
+                    {project.role}
+                  </span>
+                </div>
+                <h3 class="text-xl font-bold text-sf-dark mb-3 group-hover:text-sf-blue transition-colors">
+                  {project.title}
+                </h3>
+                <p class="text-gray-600 text-sm leading-relaxed mb-5">{project.description}</p>
+                <div class="flex flex-wrap gap-2">
+                  {project.tags.map((tag) => (
+                    <span class="text-xs bg-sf-light text-sf-dark px-3 py-1 rounded-full font-medium border border-blue-100">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section id="contact" class="py-24 bg-gradient-to-br from-sf-dark to-sf-mid">
+    <div class="max-w-3xl mx-auto px-6 text-center">
+      <span class="text-sf-blue font-semibold text-xs uppercase tracking-widest">Get In Touch</span>
+      <h2 class="text-4xl font-bold text-white mt-2 mb-6">Let's Work Together</h2>
+      <p class="text-gray-300 leading-relaxed mb-10 max-w-xl mx-auto">
+        Have a Salesforce project in mind? Whether it's a new implementation, custom development,
+        or a quick consultation — I'd love to hear from you.
+      </p>
+      <div class="flex flex-wrap gap-4 justify-center">
+        <a
+          href="mailto:ramkumar1622001@gmail.com"
+          class="inline-flex items-center gap-2 bg-sf-blue hover:bg-white hover:text-sf-dark text-white font-semibold px-8 py-4 rounded-xl transition-all text-lg"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          Email Me
+        </a>
+        <a
+          href="https://linkedin.com/in/ramk021"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 bg-white/10 hover:bg-white hover:text-sf-dark text-white font-semibold px-8 py-4 rounded-xl transition-all text-lg border border-white/30"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+          </svg>
+          LinkedIn
+        </a>
+      </div>
+    </div>
+  </section>
+
+<script>
+  const track = document.getElementById('carousel-track') as HTMLElement;
+  const dots = document.querySelectorAll<HTMLButtonElement>('.carousel-dot');
+  const slides = document.querySelectorAll<HTMLElement>('.carousel-slide');
+  let current = 0;
+  let timer: ReturnType<typeof setInterval>;
+
+  function getSlidesPerView() {
+    if (window.innerWidth >= 1024) return 3;
+    if (window.innerWidth >= 640) return 2;
+    return 1;
+  }
+
+  function goTo(index: number) {
+    const perView = getSlidesPerView();
+    const maxIndex = Math.max(0, slides.length - perView);
+    current = Math.min(index, maxIndex);
+    const slideWidth = (slides[0] as HTMLElement).offsetWidth + 24; // gap-6 = 24px
+    track.style.transform = `translateX(-${current * slideWidth}px)`;
+    dots.forEach((d, i) => {
+      d.className = i === current
+        ? 'carousel-dot rounded-full transition-all bg-sf-blue w-6 h-2.5'
+        : 'carousel-dot rounded-full transition-all bg-gray-300 w-2.5 h-2.5';
+    });
+  }
+
+  function next() {
+    const perView = getSlidesPerView();
+    const maxIndex = Math.max(0, slides.length - perView);
+    goTo(current >= maxIndex ? 0 : current + 1);
+  }
+
+  function startAuto() {
+    clearInterval(timer);
+    timer = setInterval(next, 4000);
+  }
+
+  dots.forEach((dot, i) => {
+    dot.addEventListener('click', () => { goTo(i); startAuto(); });
+  });
+
+  window.addEventListener('resize', () => goTo(current));
+  startAuto();
+</script>
+</Layout>

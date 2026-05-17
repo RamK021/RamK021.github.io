@@ -1,0 +1,14 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --color-sf-blue: #00A1E0;
+  --color-sf-dark: #032D60;
+  --color-sf-light: #f0f7ff;
+  --color-sf-mid: #1589EE;
+  --color-sf-accent: #FF6B35;
+}
+
+html {
+  scroll-behavior: smooth;
+}
